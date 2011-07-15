@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+#
+# To reload .rvmrc whenever you switch to another branch, you'll need to cd out then back
+# into the project directory - or: you could append the following into your .bash_profile:
+#
+#     git-checkout() {
+#       git checkout $*
+#       if [[ -f .rvmrc ]] ; then
+#         unset rvm_current_rvmrc
+#         cd .
+#       fi
+#     } 
+#
+# And use it when switching branches, eg:
+#
+#     $ git-checkout my-other-branch
+# 
+# Though scripting a git post-checkout hook to reload/source the .rvmrc (if possible) 
+# would be a cleaner approach.
+# 
+# - jg
+#
+
+# select a ruby version
+ruby_version="ruby-1.9.2-p180"
+
+# find out the name of the repository
+current_project="`git config --get remote.origin.url`"
+[[ -z "${current_project}" ]] && current_project="${PWD}"
+current_project="`basename ${current_project%.git}`"
+
+# find out what branch we're on...
+current_branch="`git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/'`"
+[[ -z "${current_branch}" ]] && current_branch="master"
+
+# define the name of our environment. uncomment the line below it to include
+# the branch name as part of the environment's name...
+env_id="${ruby_version}@${current_project}"
+# env_id="${ruby_version}@${current_project}+${current_branch}"
+
+# attempt to load the environment directly from the rvm environment file...
+if [[ -d "${rvm_path:-$HOME/.rvm}/environments" \
+  && -s "${rvm_path:-$HOME/.rvm}/environments/$env_id" ]] ; then
+  \. "${rvm_path:-$HOME/.rvm}/environments/$env_id"
+  
+# if the environment file has not yet been created, then create and use it
+else
+  rvm --create use "$env_id"
+fi
+
+# install bundler if necessary
+if ! command -v bundle ; then
+  gem install bundler
+fi
+ 
+# run bundle to ensure we have the all the prescribed gems
+if [[ -f Gemfile ]] ; then
+  bundle check > /dev/null 2>&1
+  (( $? )) && bundle
+fi
