@@ -23,7 +23,7 @@
 #
 
 # select a ruby version
-ruby_version="ruby-1.9.2-p180"
+ruby_version="ruby-1.9.2-p290"
 
 # find out the name of the repository
 current_project="`git config --get remote.origin.url`"
